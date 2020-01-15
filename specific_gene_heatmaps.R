@@ -85,3 +85,8 @@ EnhancedVolcano(untreated_results,
     lab = rownames(untreated_results),
     x = 'log2FoldChange', y='pvalue')
 
+
+
+# plot counts for specific gene under the different conditions
+gene <- "HAS2"
+plotCounts(dds, gene = gene, intgroup=c("celltype"))
