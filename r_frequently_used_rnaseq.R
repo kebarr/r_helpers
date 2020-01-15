@@ -116,5 +116,38 @@ myNames<-colnames(countsTable[c(8:13)])
 # now repeat everything above, but with appropriately subsetted counts table
 # can do for hela un/t, then b2b un vs hela un etc
 
+# save results to file
+res <- results(dds, name="celltypeB2B.treatmentT", cooksCutoff=FALSE, independentFiltering=TRUE)
+write.csv(res,"interaction_conditionB2B.treatmentT.csv")
 
+
+# get results and list of significantly differentially expressed genes
+
+res <- results(dds, contrast=c("celltype", "B2B_Un", "Hela_Un"),cooksCutoff=FALSE,independentFiltering=FALSE)
+degs <- degComps(dds, combs = "treatment",
+                 contrast = list("celltype_Hela_Un_vs_B2B_Un",
+                                 c("celltype", "B2B_Un", "Hela_Un")))
+
+sigs <- significants(degs[[2]], fc = 0, fdr = 0.05)
+
+# create report of deseq results:
+resreport <- degResults(dds = dds, name = "test", org = org.Hs.eg.db,
+                        do_go = FALSE, group = "treatment", xs = "treatment",
+                        path_results = NULL)
+
+# edit names of sigs so that the '.x' is removed from the end:
+sigs_gn <- gsub("\\..*", "", sigs)
+
+# GO analysis
+# can do for cellular component, molecular function, etc
+ego <- enrichGO(gene          = sigs_gn,
+                OrgDb         = org.Hs.eg.db,
+                keyType       = 'ENSEMBL',
+                ont           = "BP",
+                pAdjustMethod = "BH",
+                pvalueCutoff  = 0.01,
+                qvalueCutoff  = 0.05)
+
+# dotplot of GO analysis results
+dotplot(ego, orderBy="GeneRatio")
 
