@@ -4,9 +4,10 @@ library("clusterProfiler")
 library(pathview)
 library(gage)
 library(DESeq2)
-
+library(pathfindR)
 
 ######## GAGE pathway analysis (pathfindR below)
+# original gage script is pathways_analysis_checking
 # see here:
 # https://www.r-bloggers.com/tutorial-rna-seq-differential-expression-pathway-analysis-with-sailfish-deseq2-gage-and-pathview/
 
@@ -84,3 +85,25 @@ path.ids.l2_hela <- substr(path.ids.l_hela, 1, 8)
 pv.out.list.l_hela <- sapply(path.ids.l2_hela[1:3], function(pid) pathview(
                     gene.data = cnts.d_hela, pathway.id = pid,
                     species = "hsa"))
+
+
+######### pathfindR
+
+# some useful info here: https://www.biostars.org/p/322415/
+
+
+# get input, and add required column names
+hela <- degs_hela[[2]]$raw
+hela$Gene.symbol <- mapIds(org.Hs.eg.db, as.character(row.names(hela)), "SYMBOL", "ENSEMBL")
+hela$logFC <- hela$log2FoldChange
+hela$adj.P.Val <- hela$padj
+
+# cols needed by pathfindR
+cols <- c("Gene.symbol", "logFC", "adj.P.Val")
+hela_final <- na.exclude(data.frame(hela[cols]))
+
+# this takes quite a while.....
+hela_sig_output <- run_pathfindR(hela_sig_final)
+
+
+
