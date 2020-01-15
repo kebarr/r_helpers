@@ -6,7 +6,9 @@ library(gage)
 library(DESeq2)
 
 
-
+######## GAGE pathway analysis (pathfindR below)
+# see here:
+# https://www.r-bloggers.com/tutorial-rna-seq-differential-expression-pathway-analysis-with-sailfish-deseq2-gage-and-pathview/
 
 # set up standard design- in this case hela treated vs untreated
 treatment<-factor(c(rep("Un",3),rep("T",3)),levels=c("Un","T"))
@@ -35,7 +37,50 @@ sigs_hela <- significants(degs_hela[[2]], fc = 0, fdr = 0.05) # one and 2 are sa
 length(sigs_hela) 
 sigs_hela_gn <- gsub("\\..*", "", sigs_hela)
 
+row.names(degs_hela[[2]]$raw) <- gsub("\\..*", "", row.names(degs_hela[[2]]$raw))
+row.names(degs_hela[[2]]$shrunken) <- gsub("\\..*", "", row.names(degs_hela[[2]]$shrunken))
 
+countsTable <-read.csv("revcounts_only.csv",check.names=FALSE,row.names=1)
+myNames<-colnames(countsTable[c(8:19)])
 
+# get raw counts
+counts_only <- countsTable[myNames]
+counts_data <- as.matrix(counts_only)
 
+nonzero_counts = rowSums(counts_data) != 0
+counts_data = counts_data[nonzero_counts,]
+libsizes=colSums(counts_data)
+size.factor=libsizes/exp(mean(log(libsizes)))
+counts_data_norm=t(t(counts_data)/size.factor)
+cnts.norm=log2(counts_data_norm+8)
+row.names(cnts.norm) <- gsub("\\..*", "", row.names(cnts.norm))
+row.names(cnts.norm) <- mapIds(org.Hs.eg.db, as.character(row.names(cnts.norm)), "ENTREZID", "ENSEMBL")
 
+data(kegg.gs)
+# specify which columns are which
+ref_hela=7:9
+treat_hela=10:12
+counts_kegg_pways_hela <- gage(cnts.norm, gsets = kegg.gs, ref = ref_hela,samp = treat_hela, compare ="unpaired")
+
+# info on using gage now
+# https://www.r-bloggers.com/tutorial-rna-seq-differential-expression-pathway-analysis-with-sailfish-deseq2-gage-and-pathview/
+
+# differences between the counts for treatment and control
+cnts.d_hela= cnts.norm[, treat_hela]-rowMeans(cnts.norm[, ref_hela])
+sel_hela <- counts_kegg_pways_hela$greater[, "q.val"] < 0.1 & !is.na(counts_kegg_pways_hela$greater[,"q.val"])
+# most upregulated pathways
+path.ids_hela <- rownames(counts_kegg_pways_hela$greater)[sel_hela]
+path.ids2_hela <- substr(path.ids_hela, 1, 8)
+# visualise 
+pv.out.list_hela <- sapply(path.ids2_hela[1:3], function(pid) pathview(
+                       gene.data = cnts.d_hela, pathway.id = pid,
+                       species = "hsa"))
+#down-regulated pathways  (top 3) visualized by pathview
+sel.l_hela <- counts_kegg_pways_hela$less[, "q.val"] < 0.1 &
+            !is.na(counts_kegg_pways_hela$less[,"q.val"])
+path.ids.l_hela <- rownames(counts_kegg_pways_hela$less)[sel.l_hela]
+path.ids.l2_hela <- substr(path.ids.l_hela, 1, 8)
+#visualise
+pv.out.list.l_hela <- sapply(path.ids.l2_hela[1:3], function(pid) pathview(
+                    gene.data = cnts.d_hela, pathway.id = pid,
+                    species = "hsa"))
