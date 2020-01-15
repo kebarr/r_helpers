@@ -151,3 +151,29 @@ ego <- enrichGO(gene          = sigs_gn,
 # dotplot of GO analysis results
 dotplot(ego, orderBy="GeneRatio")
 
+
+#### volcano plot of specific gene subset
+## get res
+
+macropinocytosis_genes <- c("EGFR", "PDGFRA", "PDGFRB", "HRAS", "KRAS", "CDC42", "RAC1", "GIT1", "ARF1", "ARF6", "PAK1", "WAS1", "CYFIP1", "NCKAP1", "ABI1", "BRK1", "ARPC1A", "ARPC1B", "ARPC2", "ARPC3", "ARPC4", "ARPC5", "SWAP70", "RAB34", "CTBP1", "PLD1", "RAB5A", "RAB5B", "RAB5C", "RAB20", "RAB21", "RAB7A", "RAB7B", "LAMP1", "SNX1", "SNX5", "RAB11A", "RAB11B")
+# map to ensembl id to match RNASeq data
+macropinocytosis_genes_ensembl <- mapIds(org.Hs.eg.db, macropinocytosis_genes, "ENSEMBL", "SYMBOL")
+
+
+res <- results(dds, contrast=c("celltype", "B2B_Un", "Hela_Un"),cooksCutoff=FALSE,independentFiltering=FALSE)
+
+row.names(res) <- gsub("\\..*", "", row.names(res))
+
+
+untreated_results <- res[row.names(res) %in% macropinocytosis_genes_ensembl, ]
+
+rownames(untreated_results) <- mapIds(org.Hs.eg.db, rownames(untreated_results), "SYMBOL", "ENSEMBL")
+
+png("macropinocytosis_untreated_volcano.png")
+EnhancedVolcano(untreated_results,
+    lab = rownames(untreated_results),
+    x = 'log2FoldChange', y='pvalue')
+
+
+
+
