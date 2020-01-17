@@ -6,6 +6,8 @@ library(gage)
 library(DESeq2)
 library(pathfindR)
 
+setwd("~/Documents/....")
+
 ######## GAGE pathway analysis (pathfindR below)
 # original gage script is pathways_analysis_checking
 # see here:
@@ -40,6 +42,10 @@ sigs_hela_gn <- gsub("\\..*", "", sigs_hela)
 
 row.names(degs_hela[[2]]$raw) <- gsub("\\..*", "", row.names(degs_hela[[2]]$raw))
 row.names(degs_hela[[2]]$shrunken) <- gsub("\\..*", "", row.names(degs_hela[[2]]$shrunken))
+
+
+###################
+
 
 countsTable <-read.csv("revcounts_only.csv",check.names=FALSE,row.names=1)
 myNames<-colnames(countsTable[c(8:19)])
@@ -92,18 +98,35 @@ pv.out.list.l_hela <- sapply(path.ids.l2_hela[1:3], function(pid) pathview(
 # some useful info here: https://www.biostars.org/p/322415/
 
 
-# get input, and add required column names
-hela <- degs_hela[[2]]$raw
-hela$Gene.symbol <- mapIds(org.Hs.eg.db, as.character(row.names(hela)), "SYMBOL", "ENSEMBL")
-hela$logFC <- hela$log2FoldChange
-hela$adj.P.Val <- hela$padj
+# get significantly differentially expressed genes
 
+sigs_hela <- significants(degs_hela[[2]], fc = 0, fdr = 0.05) # one and 2 are same for data like this
+length(sigs_hela)
+# convert to gene name
+sigs_hela_gn <- gsub("\\..*", "", sigs_hela)
 # cols needed by pathfindR
 cols <- c("Gene.symbol", "logFC", "adj.P.Val")
-hela_final <- na.exclude(data.frame(hela[cols]))
+
+hela_sig <- degs_hela[[2]]$raw[row.names(degs_hela[[2]]$raw) %in% sigs_hela_gn, ]
+
+# add required column names
+hela_sig$Gene.symbol <- mapIds(org.Hs.eg.db, as.character(row.names(hela_sig)), "SYMBOL", "ENSEMBL")
+hela_sig$logFC <- hela_sig$log2FoldChange
+hela_sig$adj.P.Val <- hela_sig$padj
+
+hela_sig_final <- na.exclude(data.frame(hela_sig[cols]))
 
 # this takes quite a while.....
+
+# not working for this, but does for example data: https://www.biostars.org/p/322415/
+# example data has 572 rows, so try with fewer
 hela_sig_output <- run_pathfindR(hela_sig_final)
 
+# also trying gene_sets="Reactome" - which runs
+hela_sig_output <- run_pathfindR(hela_sig_final, iterations=1, visualize_enriched_terms=FALSE)
 
+# doesn't work for 1000, or 500
+test <- head(hela_sig_final, 100)
+
+hela_sig_output <- run_pathfindR(test)
 

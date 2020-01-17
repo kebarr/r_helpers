@@ -16,6 +16,16 @@ library(EnhancedVolcano) # plot volcano
 library(edgeR) # more differential expression analysis
 
 
+# USEFUL LINKS:
+#http://combine-australia.github.io/RNAseq-R/06-rnaseq-day1.html
+#https://galaxyproject.github.io/training-material/topics/transcriptomics/tutorials/rna-seq-genes-to-pathways/tutorial.html
+#http://genomespot.blogspot.com/2014/09/data-analysis-step-6-draw-heatmap-from.html
+#https://bioinformatics-core-shared-training.github.io/cruk-summer-school-2018/RNASeq2018/html/06_Gene_set_testing.nb.html
+
+#Pathway analysis tool to try:
+#http://cpdb.molgen.mpg.de
+
+
 setwd("~/Documents/....")
 
 
